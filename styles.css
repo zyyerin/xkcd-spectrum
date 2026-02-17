@@ -1,0 +1,107 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
+
+/* Smooth scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Card hover effect */
+.color-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.color-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Hide scrollbar for specific elements */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Toast Animation */
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+.toast-enter {
+    animation: slideIn 0.3s ease-out forwards;
+}
+.toast-exit {
+    animation: fadeOut 0.3s ease-in forwards;
+}
+
+/* Hue Button Styles */
+.hue-btn {
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+.hue-btn:hover {
+    transform: scale(1.1);
+}
+.hue-btn.active {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--ring-color);
+}
+
+/* Palette Card */
+#paletteCard {
+    max-height: 70vh;
+    transition-property: opacity, transform, visibility;
+    transition-duration: 0.3s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: bottom right;
+}
+.palette-hidden {
+    opacity: 0;
+    transform: scale(0.9) translateY(12px);
+    pointer-events: none;
+    visibility: hidden;
+}
+.palette-visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+    visibility: visible;
+}
+
+/* Compact View Styles */
+.compact-cell {
+    aspect-ratio: 1;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.compact-cell:hover {
+    transform: scale(1.2);
+    z-index: 20;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    border-radius: 4px;
+}
