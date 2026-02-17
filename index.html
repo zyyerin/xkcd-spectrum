@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XKCD Color Spectrum</title>
+    <title>XKCD Spectrum</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -16,23 +16,27 @@
         <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 
-                <!-- Title -->
+                <!-- Title Row with Translation Button -->
                 <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                     <div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-baseline gap-0.5">
                             <h1 id="headerTitle" class="text-2xl font-bold tracking-tight text-slate-900">XKCD Spectrum</h1>
-                            <a id="dataSourceLink" href="https://xkcd.com/color/rgb/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors shrink-0" title="Data source: https://xkcd.com/color/rgb/">
-                                <i class="fas fa-circle-info text-base"></i>
+                            <a id="dataSourceLink" href="https://xkcd.com/color/rgb/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-6 h-6 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors shrink-0" title="Data source: https://xkcd.com/color/rgb/">
+                                <i class="fas fa-circle-info text-xs"></i>
                             </a>
                         </div>
                         <p id="headerSubtitle" class="text-xs text-slate-500 font-medium">954 Named Colors</p>
                     </div>
+                    <!-- Language Toggle - Top Right on Mobile -->
+                    <button id="langToggle" onclick="toggleLanguage()" class="p-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:text-indigo-600 hover:border-indigo-300 bg-white h-[38px] w-[38px] transition-all md:hidden">
+                        中
+                    </button>
                 </div>
 
                 <!-- Primary Controls (Search & View) -->
                 <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
                     <!-- Search -->
-                    <div class="relative group w-full md:w-64">
+                    <div class="relative group w-full md:w-[512px]">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-search text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
                         </div>
@@ -44,21 +48,11 @@
                         </div>
                     </div>
 
-                    <!-- View Toggle Group -->
-                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                        <!-- Language Toggle -->
-                        <button id="langToggle" onclick="toggleLanguage()" class="p-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:text-indigo-600 hover:border-indigo-300 bg-white h-[38px] w-[38px] transition-all">
+                    <!-- Language Toggle - Desktop only -->
+                    <div class="hidden md:flex items-center">
+                        <button id="langToggleDesktop" onclick="toggleLanguage()" class="p-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:text-indigo-600 hover:border-indigo-300 bg-white h-[38px] w-[38px] transition-all">
                             中
                         </button>
-
-                        <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 h-[38px] items-center">
-                            <button id="viewGridBtn" class="p-1.5 rounded-md bg-white shadow-sm text-indigo-600 transition-all w-9 flex justify-center items-center" onclick="setView('grid')" title="Card View">
-                                <i class="fas fa-th-large text-sm"></i>
-                            </button>
-                            <button id="viewCompactBtn" class="p-1.5 rounded-md text-slate-400 hover:text-slate-600 transition-all w-9 flex justify-center items-center" onclick="setView('compact')" title="Compact View">
-                                <i class="fas fa-grip text-sm"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -85,16 +79,29 @@
                         <button class="hue-btn w-6 h-6 rounded-full bg-[#8B4513] shadow-sm shrink-0" onclick="toggleHuePreset('brown')" data-color-key="brown" title="Brown" style="--ring-color: #8B4513;"></button>
                     </div>
 
-                    <!-- Sort Dropdown -->
-                    <div class="flex items-center gap-2 min-w-fit ml-auto">
-                        <i class="fas fa-sort-amount-down text-slate-400 text-xs"></i>
-                        <select id="sortSelect" class="block w-36 pl-2 pr-8 py-1 text-xs border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md bg-white shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
-                            <option value="hue">🌈 Rainbow</option>
-                            <option value="alpha">🔤 Name (A-Z)</option>
-                            <option value="light">☀️ Lightest</option>
-                            <option value="dark">🌑 Darkest</option>
-                            <option value="saturation">🎨 Vivid</option>
-                        </select>
+                    <!-- Filter Controls Row: Sort Dropdown + View Toggle -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                        <!-- Sort Dropdown - Left on Mobile, Right on Desktop -->
+                        <div class="flex items-center gap-2 min-w-fit md:ml-auto">
+                            <i class="fas fa-sort-amount-down text-slate-400 text-xs"></i>
+                            <select id="sortSelect" class="block w-36 pl-2 pr-8 py-1 text-xs border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md bg-white shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
+                                <option value="hue">🌈 Rainbow</option>
+                                <option value="alpha">🔤 Name (A-Z)</option>
+                                <option value="light">☀️ Lightest</option>
+                                <option value="dark">🌑 Darkest</option>
+                                <option value="saturation">🎨 Vivid</option>
+                            </select>
+                        </div>
+
+                        <!-- View Toggle Group - Right on Mobile and Desktop, same row as filter -->
+                        <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 h-[38px] items-center">
+                            <button id="viewGridBtn" class="p-1.5 rounded-md bg-white shadow-sm text-indigo-600 transition-all w-9 flex justify-center items-center" onclick="setView('grid')" title="Card View">
+                                <i class="fas fa-th-large text-sm"></i>
+                            </button>
+                            <button id="viewCompactBtn" class="p-1.5 rounded-md text-slate-400 hover:text-slate-600 transition-all w-9 flex justify-center items-center" onclick="setView('compact')" title="Compact View">
+                                <i class="fas fa-grip text-sm"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

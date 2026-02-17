@@ -16,23 +16,62 @@ let isPaletteOpen = false;
 function translateName(name) {
     if (typeof name !== 'string') return name;
 
+    // First, handle multi-word phrases (like "a hint of")
+    let result = name.toLowerCase();
+    const multiWordPhrases = Object.keys(cnDict).filter(key => key.includes(' '));
+    multiWordPhrases.sort((a, b) => b.length - a.length); // Sort by length descending to match longer phrases first
+    for (const phrase of multiWordPhrases) {
+        const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        if (regex.test(result)) {
+            result = result.replace(regex, cnDict[phrase]);
+        }
+    }
+
     const checkSuffix = (word) => {
         if (word.endsWith('ish') && word.length > 3) return { base: word.slice(0, -3), prefix: '带' };
         if (word.endsWith('y') && word.length > 2 && !['sky', 'navy'].includes(word)) return { base: word.slice(0, -1), prefix: '带' };
         return null;
     };
-    const parts = name.split(/[\s/]+/);
-    const translatedParts = parts.map(part => {
-        const lower = part.toLowerCase();
+    
+    // Preserve slashes but remove spaces by splitting on word boundaries
+    // Use a regex to match words and separators separately
+    const tokens = [];
+    const regex = /([^\s/]+)|([\s/]+)/g;
+    let match;
+    
+    while ((match = regex.exec(result)) !== null) {
+        if (match[1]) {
+            // Word part
+            tokens.push({ type: 'word', value: match[1] });
+        } else if (match[2]) {
+            // Separator part (spaces or slashes)
+            // Only keep slashes, remove spaces
+            const separator = match[2].replace(/\s/g, ''); // Remove all spaces
+            if (separator) {
+                tokens.push({ type: 'separator', value: separator });
+            }
+        }
+    }
+    
+    // Translate word tokens
+    const translatedTokens = tokens.map(token => {
+        if (token.type === 'separator') {
+            return token.value; // Keep slashes
+        }
+        // Translate word
+        const lower = token.value.toLowerCase();
+        // Skip if already translated (contains Chinese characters)
+        if (/[\u4e00-\u9fa5]/.test(token.value)) return token.value;
         if (cnDict[lower]) return cnDict[lower];
         const suffixInfo = checkSuffix(lower);
         if (suffixInfo) {
             const baseTrans = cnDict[suffixInfo.base];
             if (baseTrans) return suffixInfo.prefix + baseTrans;
         }
-        return part;
+        return token.value;
     });
-    return translatedParts.join('');
+    
+    return translatedTokens.join('');
 }
 
 function setLanguage(lang) {
@@ -50,21 +89,30 @@ function setLanguage(lang) {
     document.getElementById('paletteClearBtn').textContent = t.clear;
     document.getElementById('paletteEmptyText').textContent = t.emptyPalette;
     document.getElementById('paletteCardTitle').textContent = t.paletteLabel;
-    document.getElementById('langToggle').textContent = lang === 'en' ? '中' : 'EN';
+    // Update language toggle buttons (mobile and desktop)
+    const langToggleMobile = document.getElementById('langToggle');
+    const langToggleDesktop = document.getElementById('langToggleDesktop');
+    if (langToggleMobile) langToggleMobile.textContent = lang === 'en' ? '中' : 'EN';
+    if (langToggleDesktop) langToggleDesktop.textContent = lang === 'en' ? '中' : 'EN';
+    
+    // Update sort select
     const sortSelect = document.getElementById('sortSelect');
-    Array.from(sortSelect.options).forEach(opt => {
-        if (t.sort[opt.value]) opt.textContent = t.sort[opt.value];
-    });
+    if (sortSelect) {
+        Array.from(sortSelect.options).forEach(opt => {
+            if (t.sort[opt.value]) opt.textContent = t.sort[opt.value];
+        });
+    }
     document.querySelectorAll('.hue-btn').forEach(btn => {
         const key = btn.getAttribute('data-color-key');
         if (key && t.colors[key]) btn.title = t.colors[key];
     });
+    const sortMethod = sortSelect ? sortSelect.value : 'hue';
     renderColors(sortColors(allColors.filter(c => {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const matchesSearch = !query || c.name.toLowerCase().includes(query) || c.nameZh.includes(query) || c.hex.toLowerCase().includes(query);
         const matchesPreset = !filters.huePreset || matchHuePreset(c, filters.huePreset);
         return matchesSearch && matchesPreset;
-    }), document.getElementById('sortSelect').value));
+    }), sortMethod));
     updateBucketUI();
 }
 
@@ -267,7 +315,10 @@ window.addEventListener('mouseup', () => {
 function copyPalette() {
     const t = translations[currentLang];
     if (bucket.length === 0) return;
-    const text = bucket.map(c => `${c.name}: ${c.hex}`).join('\n');
+    const text = bucket.map(c => {
+        const displayName = currentLang === 'zh' ? translateName(c.name) : c.name;
+        return `${displayName}: ${c.hex}`;
+    }).join('\n');
     const textarea = document.createElement('textarea');
     textarea.value = text;
     document.body.appendChild(textarea);
@@ -364,7 +415,6 @@ function updateBucketUI() {
 const grid = document.getElementById('colorGrid');
 const emptyState = document.getElementById('emptyState');
 const searchInput = document.getElementById('searchInput');
-const sortSelect = document.getElementById('sortSelect');
 const loading = document.getElementById('loading');
 const resultCount = document.getElementById('resultCount');
 
@@ -372,15 +422,20 @@ function setView(mode) {
     currentView = mode;
     const gridBtn = document.getElementById('viewGridBtn');
     const compactBtn = document.getElementById('viewCompactBtn');
+    
     const activeClass = 'bg-white shadow-sm text-indigo-600 transition-all';
     const inactiveClass = 'text-slate-400 hover:text-slate-600 transition-all';
-    if (mode === 'grid') {
-        gridBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${activeClass}`;
-        compactBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${inactiveClass}`;
-    } else {
-        gridBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${inactiveClass}`;
-        compactBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${activeClass}`;
+    
+    if (gridBtn && compactBtn) {
+        if (mode === 'grid') {
+            gridBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${activeClass}`;
+            compactBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${inactiveClass}`;
+        } else {
+            gridBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${inactiveClass}`;
+            compactBtn.className = `p-1.5 rounded-md w-9 flex justify-center items-center ${activeClass}`;
+        }
     }
+    
     handleFilterAndSort();
 }
 
@@ -490,7 +545,10 @@ function handleFilterAndSort() {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
         const query = searchInput.value.toLowerCase();
-        const sortMethod = sortSelect.value;
+        // Get sort method from sort select
+        const sortSelect = document.getElementById('sortSelect');
+        const sortMethod = sortSelect ? sortSelect.value : 'hue';
+        
         let filtered = allColors.filter(c => {
             if (query && !c.name.toLowerCase().includes(query) && !c.nameZh.includes(query) && !c.hex.toLowerCase().includes(query)) return false;
             if (filters.huePreset && !matchHuePreset(c, filters.huePreset)) return false;
@@ -515,7 +573,12 @@ window.addEventListener('DOMContentLoaded', () => {
             setLanguage('en');
             handleFilterAndSort();
             searchInput.addEventListener('input', handleFilterAndSort);
-            sortSelect.addEventListener('change', handleFilterAndSort);
+            
+            // Add event listener to sort select
+            const sortSelect = document.getElementById('sortSelect');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', handleFilterAndSort);
+            }
         })
         .catch(err => {
             console.error('Failed to load colors.txt', err);
